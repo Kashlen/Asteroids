@@ -17,11 +17,11 @@ window = pyglet.window.Window(width=WIDTH, height=HEIGHT)
 
 
 class Spaceship:
-    def __init__(self):
+    def __init__(self, rotation):
         self.x, self.y = [WIDTH // 2, HEIGHT // 5]
         self.x_speed = 50
         self.y_speed = 50
-        self.rotation = 1.5708
+        self.rotation = rotation
         image = pyglet.image.load("resources/blue_spaceship.png")
         image.anchor_x = image.width // 2
         image.anchor_y = image.height // 2
@@ -60,14 +60,21 @@ def released_key(symbol, modifiers):
 
 def draw():
     window.clear()
-    game_batch.draw()
 
+    for x_offset in (-window.width, 0, window.width):
+        for y_offset in (-window.height, 0, window.height):
+            # Remember the current state
+            gl.glPushMatrix()
+            # Move everything drawn from now on by (x_offset, y_offset, 0)
+            gl.glTranslatef(x_offset, y_offset, 0)
+    
+            game_batch.draw()
 
-
-
-
-ship = Spaceship()
-ship.__init__()
+            # Restore remembered state (this cancels the glTranslatef)
+            gl.glPopMatrix()
+            
+ship = Spaceship(1.5708)
+ship2 = Spaceship(0.0708)
 
 window.push_handlers(
     on_draw = draw,
@@ -75,5 +82,7 @@ window.push_handlers(
     on_key_release = released_key,
 )
 
+
 pyglet.clock.schedule(ship.tick)
+pyglet.clock.schedule(ship2.tick)
 pyglet.app.run()
