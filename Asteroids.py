@@ -1,8 +1,10 @@
 from random import randint, uniform, choice
 import os
+from typing import overload
 import pyglet, math
 from pyglet import gl
 from pyglet.window import key
+
 
 ROTATION_SPEED = 1 # radians per second ZKOUŠET
 ACCELERATION = 30
@@ -11,29 +13,38 @@ HEIGHT = 600
 
 objects = []
 game_batch = pyglet.graphics.Batch()
-pressed_keys = set() # Vesmírná loď se 
-                    # pak do množiny „podívá” v rámci své metody tick
+pressed_keys = set() 
 dt = pyglet.clock.tick()
 
 window = pyglet.window.Window(width=WIDTH, height=HEIGHT)
 
 
 class SpaceObject:
-    def __init__(self, x, y, rotation, x_speed, y_speed):
+    def __init__(self, x, y, rotation, x_speed, y_speed, radius):
         self.x, self.y = [x, y]
         self.x_speed = x_speed
         self.y_speed = y_speed
         self.rotation = rotation
+        self.radius = radius
+        objects.append(self)
 
     def tick(self, dt):
         self.x = self.x + dt * self.x_speed * math.cos(self.rotation)
         self.y = self.y + dt * self.y_speed * math.sin(self.rotation)
-        self.sprite.x, self.sprite.y = [self.x, self.y]   
-       
+        self.sprite.x, self.sprite.y = [self.x, self.y] 
+
+    def delete(self):
+        if self in objects:
+            objects.remove(self)
+        self.sprite.delete()
+
+    def hit_by_spaceship(self, spaceship):
+        pass
+
 
 class Spaceship(SpaceObject):
     def __init__(self):
-        super().__init__(x=WIDTH // 2, y=HEIGHT // 5, rotation=1.5708, x_speed=50, y_speed=50)
+        super().__init__(x=WIDTH // 2, y=HEIGHT // 5, rotation=1.5708, x_speed=50, y_speed=50, radius=40)
         image = pyglet.image.load("resources/blue_spaceship.png")
         image.anchor_x = image.width // 2
         image.anchor_y = image.height // 2
@@ -50,16 +61,25 @@ class Spaceship(SpaceObject):
         if "up" in pressed_keys:
             self.x_speed += dt * ACCELERATION
             self.y_speed += dt * ACCELERATION
+        for object in objects:
+            if overlaps(self, object):
+                object.hit_by_spaceship(self)
 
+   
 class Asteroid(SpaceObject):
     def __init__(self):
-        super().__init__(x=0, y=0, rotation=uniform(0,6.3), x_speed=randint(20,50), y_speed=randint(20,50))
+        super().__init__(x=0, y=0, rotation=uniform(0,6.3), x_speed=randint(20,50), y_speed=randint(20,50), radius=0)
         images = os.listdir("resources/asteroid")
         png = choice(images)
         image_a = pyglet.image.load("resources/asteroid/" + png)
         image_a.anchor_x = image_a.width // 2
         image_a.anchor_y = image_a.height // 2
         self.sprite = pyglet.sprite.Sprite(image_a, batch=game_batch)
+        choose_radius = {"asteroid_l.png": 45, "asteroid_m.png": 18, "asteroid_s.png": 8}
+        self.radius = int(choose_radius[str(png)])
+        
+    def hit_by_spaceship(self, spaceship):
+        spaceship.delete()
 
 
 def pressed_key(symbol, modifiers):
@@ -93,7 +113,23 @@ def draw():
             # Restore remembered state (this cancels the glTranslatef)
             gl.glPopMatrix()
 
-ship = Spaceship()
+
+def distance(a, b, wrap_size):   # Distance in one direction (x or y)
+    result = abs(a - b)
+    if result > wrap_size / 2:
+        result = wrap_size - result
+    return result
+
+def overlaps(a, b):   #Returns true iff two space objects overlap
+    distance_squared = (distance(a.x, b.x, window.width) ** 2 + distance(a.y, b.y, window.height) ** 2)
+    max_distance_squared = (a.radius + b.radius) ** 2
+    return distance_squared < max_distance_squared
+
+def tick(dt):
+    for object in objects:
+        object.tick(dt)
+
+spaceship = Spaceship()
 asteroid1 = Asteroid()
 asteroid2 = Asteroid()
 asteroid3 = Asteroid()
@@ -106,8 +142,5 @@ window.push_handlers(
 )
 
 
-pyglet.clock.schedule(ship.tick)
-pyglet.clock.schedule(asteroid1.tick)
-pyglet.clock.schedule(asteroid2.tick)
-pyglet.clock.schedule(asteroid3.tick)
+pyglet.clock.schedule(tick)
 pyglet.app.run()
