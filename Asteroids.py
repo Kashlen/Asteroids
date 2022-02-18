@@ -21,13 +21,14 @@ window = pyglet.window.Window(width=WIDTH, height=HEIGHT)
 
 
 class SpaceObject:
-    def __init__(self, x, y, rotation, x_speed, y_speed, radius, laser_countdown):
+    def __init__(self, x, y, rotation, x_speed, y_speed, radius, laser_countdown, png):
         self.x, self.y = [x, y]
         self.x_speed = x_speed
         self.y_speed = y_speed
         self.rotation = rotation
         self.radius = radius
         self.laser_countdown = laser_countdown
+        self.png = png
         objects.append(self)
 
     def tick(self, dt):
@@ -49,7 +50,7 @@ class SpaceObject:
 
 class Spaceship(SpaceObject):
     def __init__(self):
-        super().__init__(x=WIDTH // 2, y=HEIGHT // 5, rotation=1.5708, x_speed=50, y_speed=50, radius=40, laser_countdown=-0.1)
+        super().__init__(x=WIDTH // 2, y=HEIGHT // 5, rotation=1.5708, x_speed=50, y_speed=50, radius=40, laser_countdown=-0.1, png=0)
         image = pyglet.image.load("resources/blue_spaceship.png")
         image.anchor_x = image.width // 2
         image.anchor_y = image.height // 2
@@ -69,15 +70,15 @@ class Spaceship(SpaceObject):
             self.y_speed += dt * ACCELERATION
         if "space" in pressed_keys:
             if self.laser_countdown < 0:
-                Laser(self.x, self.y, self.rotation, self.x_speed, self.y_speed, self.radius, self.laser_countdown)
+                Laser(self.x, self.y, self.rotation, self.x_speed, self.y_speed, self.radius, self.laser_countdown, self.png)
                 self.laser_countdown = 2.5
         for object in objects:
             if overlaps(self, object):
                 object.hit_by_spaceship(self)
 
 class Laser(SpaceObject):
-    def __init__(self, x, y, rotation, x_speed, y_speed, radius, laser_countdown):
-        super().__init__(x=spaceship.x, y=spaceship.y, rotation=spaceship.rotation, x_speed=spaceship.x_speed+400, y_speed=spaceship.y_speed+400, radius=5, laser_countdown=0)
+    def __init__(self, x, y, rotation, x_speed, y_speed, radius, laser_countdown, png):
+        super().__init__(x=spaceship.x, y=spaceship.y, rotation=spaceship.rotation, x_speed=spaceship.x_speed+400, y_speed=spaceship.y_speed+400, radius=5, laser_countdown=0, png=0)
         image = pyglet.image.load("resources/laser.png")
         image.anchor_x = image.width // 2
         image.anchor_y = image.height // 2
@@ -90,16 +91,19 @@ class Laser(SpaceObject):
         for object in objects:
             if overlaps(self, object):
                 object.hit_by_laser()
+                print("laser hit size " + str(object.png))
         self.time_to_stay -= dt
         if self.time_to_stay <= 0:
             objects.remove(self)
 
 class Asteroid(SpaceObject):
-    def __init__(self, png):
-        super().__init__(x=0, y=0, rotation=uniform(0,6.3), x_speed=randint(20,50), y_speed=randint(20,50), radius=0, laser_countdown=0)
+    def __init__(self, x, y, rotation, x_speed, y_speed, radius, laser_countdown, png):
+        super().__init__(x=0, y=0, rotation=uniform(0,6.3), x_speed=randint(20,50), y_speed=randint(20,50), radius=0, laser_countdown=0, png=0)
         images = os.listdir("resources/asteroid")
-        self.png = choice(images)
-        image_a = pyglet.image.load("resources/asteroid/" + self.png)
+        if self.png == 0:
+            self.png = choice(images)
+        print("my png is " + str(png))
+        image_a = pyglet.image.load("resources/asteroid/" + str(self.png))
         image_a.anchor_x = image_a.width // 2
         image_a.anchor_y = image_a.height // 2
         self.sprite = pyglet.sprite.Sprite(image_a, batch=game_batch)
@@ -111,15 +115,16 @@ class Asteroid(SpaceObject):
     
     def hit_by_laser(self):
         asteroid_size = self.png
-        self.delete()
-        if asteroid_size == "asteroid_l.png":
-            Asteroid(png="asteroid_m.png")
-            Asteroid(png="asteroid_m.png")
-        elif asteroid_size == "asteroid_m.png":
-            Asteroid(png="asteroid_s.png")
-            Asteroid(png="asteroid_s.png")
+        print("my size is " + str(self.png))
+        if asteroid_size == "asteroid_m.png":
+            Asteroid.__init__(self, x=self.x, y=self.y, rotation=self.rotation, x_speed=self.x_speed, y_speed=self.y_speed, radius=self.radius, laser_countdown=self.laser_countdown, png="asteroid_s.png")
+            Asteroid.__init__(self, x=self.x, y=self.y, rotation=self.rotation, x_speed=self.x_speed, y_speed=self.y_speed, radius=self.radius, laser_countdown=self.laser_countdown, png="asteroid_s.png")
+        elif asteroid_size == "asteroid_l.png":
+            Asteroid.__init__(self, x=self.x, y=self.y, rotation=self.rotation, x_speed=self.x_speed, y_speed=self.y_speed, radius=self.radius, laser_countdown=self.laser_countdown, png="asteroid_m.png")
+            Asteroid.__init__(self, x=self.x, y=self.y, rotation=self.rotation, x_speed=self.x_speed, y_speed=self.y_speed, radius=self.radius, laser_countdown=self.laser_countdown, png="asteroid_m.png")
         else:
             pass
+        self.delete()
 
 
 def pressed_key(symbol, modifiers):
@@ -175,9 +180,9 @@ def tick(dt):
 
 
 spaceship = Spaceship()
-asteroid1 = Asteroid(png=0)
-asteroid2 = Asteroid(png=0)
-asteroid3 = Asteroid(png=0)
+asteroid1 = Asteroid(x=0, y=0, rotation=uniform(0,6.3), x_speed=randint(20,50), y_speed=randint(20,50), radius=0, laser_countdown=0, png=0)
+asteroid2 = Asteroid(x=0, y=0, rotation=uniform(0,6.3), x_speed=randint(20,50), y_speed=randint(20,50), radius=0, laser_countdown=0, png=0)
+asteroid3 = Asteroid(x=0, y=0, rotation=uniform(0,6.3), x_speed=randint(20,50), y_speed=randint(20,50), radius=0, laser_countdown=0, png=0)
 
 
 window.push_handlers(
