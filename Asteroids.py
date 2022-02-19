@@ -102,7 +102,7 @@ class Asteroid(SpaceObject):
         images = os.listdir("resources/asteroid")
         if self.png == 0:
             self.png = choice(images)
-        print("my png is " + str(png))
+        print("my new png is " + str(png))
         image_a = pyglet.image.load("resources/asteroid/" + str(self.png))
         image_a.anchor_x = image_a.width // 2
         image_a.anchor_y = image_a.height // 2
@@ -115,7 +115,8 @@ class Asteroid(SpaceObject):
     
     def hit_by_laser(self):
         asteroid_size = self.png
-        print("my size is " + str(self.png))
+        print("my hit size is " + str(self.png))
+        self.delete()
         if asteroid_size == "asteroid_m.png":
             Asteroid.__init__(self, x=self.x, y=self.y, rotation=self.rotation, x_speed=self.x_speed, y_speed=self.y_speed, radius=self.radius, laser_countdown=self.laser_countdown, png="asteroid_s.png")
             Asteroid.__init__(self, x=self.x, y=self.y, rotation=self.rotation, x_speed=self.x_speed, y_speed=self.y_speed, radius=self.radius, laser_countdown=self.laser_countdown, png="asteroid_s.png")
@@ -124,7 +125,6 @@ class Asteroid(SpaceObject):
             Asteroid.__init__(self, x=self.x, y=self.y, rotation=self.rotation, x_speed=self.x_speed, y_speed=self.y_speed, radius=self.radius, laser_countdown=self.laser_countdown, png="asteroid_m.png")
         else:
             pass
-        self.delete()
 
 
 def pressed_key(symbol, modifiers):
