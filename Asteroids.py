@@ -102,6 +102,8 @@ class Asteroid(SpaceObject):
         images = os.listdir("resources/asteroid")
         if self.png == 0:
             self.png = choice(images)
+        else:
+            self.png = png
         print("my new png is " + str(png))
         image_a = pyglet.image.load("resources/asteroid/" + str(self.png))
         image_a.anchor_x = image_a.width // 2
